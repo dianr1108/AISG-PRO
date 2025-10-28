@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "name": "AISG Engine – Server Specification",
+    "version": "1.0.0",
+    "purpose": "Spesifikasi API backend untuk proses audit, scoring, laporan, dan integrasi GPT."
+  },
+  "auth": {
+    "type": "API_KEY",
+    "header": "Authorization: Bearer <key>",
+    "roles": [
+      "auditor_sg",
+      "branch_manager",
+      "system_bot"
+    ]
+  },
+  "endpoints": [
+    {
+      "path": "/api/audit",
+      "method": "POST",
+      "desc": "Menerima data audit dari GPT dan mengembalikan hasil lengkap.",
+      "request": {
+        "identity": {
+          "nama": "string",
+          "jabatan": "string",
+          "cabang": "string"
+        },
+        "quarter": {
+          "margin_pribadi_usd": "number",
+          "margin_tim_usd": "number",
+          "bc_aktif": "int",
+          "bc_baru": "int"
+        },
+        "pillars": [
+          {
+            "pillar_id": "int",
+            "answer": "YA|SEBAGIAN|TIDAK"
+          }
+        ],
+        "tanggal_lahir": "DD-MM-YYYY"
+      },
+      "response": {
+        "audit_id": "uuid",
+        "zona_kinerja": "🟩|🟨|🟥",
+        "zona_perilaku": "🟩|🟨|🟥",
+        "profil": "Leader|Visionary|Performer|At-Risk",
+        "magic_section": {
+          "zodiak": "string",
+          "booster": "string",
+          "quote": "string"
+        },
+        "prodem_rekomendasi": "string"
+      }
+    },
+    {
+      "path": "/api/report/{audit_id}",
+      "method": "GET",
+      "desc": "Mengambil laporan audit lengkap berdasarkan ID."
+    },
+    {
+      "path": "/api/report/pdf",
+      "method": "POST",
+      "desc": "Menghasilkan file PDF dari payload laporan.",
+      "body": "JSON report"
+    }
+  ],
+  "database": {
+    "tables": [
+      "audits",
+      "users",
+      "branches"
+    ],
+    "fields": {
+      "audits": [
+        "id",
+        "identity",
+        "quarter",
+        "scores",
+        "zones",
+        "profile",
+        "magic",
+        "prodem",
+        "created_at"
+      ]
+    }
+  },
+  "organization_hierarchy": [
+    {
+      "level": "BC",
+      "nama": "Business Consultant",
+      "atasan": "SBC",
+      "syarat_promosi": {
+        "bc_aktif": 3,
+        "margin_pribadi_usd": 5000,
+        "periode_min": "3 bulan"
+      }
+    },
+    {
+      "level": "SBC",
+      "nama": "Senior Business Consultant",
+      "atasan": "BSM",
+      "syarat_promosi": {
+        "bc_aktif": 3,
+        "margin_tim_usd": 75000,
+        "periode_min": "3 bulan"
+      }
+    },
+    {
+      "level": "BSM",
+      "nama": "Business Sales Manager",
+      "atasan": "SBM",
+      "syarat_promosi": {
+        "margin_tim_usd": 125000,
+        "bc_aktif": 3,
+        "periode_min": "6 bulan"
+      }
+    },
+    {
+      "level": "SBM",
+      "nama": "Senior Business Manager",
+      "atasan": "EM",
+      "syarat_promosi": {
+        "margin_tim_usd": 250000,
+        "bc_aktif": 5,
+        "periode_min": "9 bulan"
+      }
+    },
+    {
+      "level": "EM",
+      "nama": "Executive Manager",
+      "atasan": "SEM",
+      "syarat_promosi": {
+        "margin_tim_usd": 400000,
+        "periode_min": "12 bulan"
+      }
+    },
+    {
+      "level": "SEM",
+      "nama": "Senior Executive Manager",
+      "atasan": "VBM",
+      "syarat_promosi": {
+        "margin_tim_usd": 600000,
+        "periode_min": "12 bulan"
+      }
+    },
+    {
+      "level": "VBM",
+      "nama": "Vice Business Manager",
+      "atasan": "BM",
+      "syarat_promosi": {
+        "margin_tim_usd": 800000,
+        "periode_min": "12 bulan"
+      }
+    },
+    {
+      "level": "BM",
+      "nama": "Business Manager (KACAN)",
+      "atasan": "-",
+      "syarat_promosi": {
+        "margin_tim_usd": 1000000,
+        "periode_min": "18 bulan"
+      }
+    }
+  ],
+  "integration": {
+    "gpt_connector": {
+      "endpoint": "/api/audit",
+      "purpose": "Dipanggil oleh AISG Coach GPT untuk memproses audit otomatis."
+    },
+    "dashboard": {
+      "endpoint": "/api/report",
+      "purpose": "Dihubungkan ke internal SG Portal (untuk manajemen hasil audit)."
+    }
+  }
+}

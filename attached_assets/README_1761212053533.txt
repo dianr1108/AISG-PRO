@@ -1,0 +1,13 @@
+# AISG MASTER PACKAGE v1.0
+
+This package contains all core files, templates, and blueprints for AISG (Audit Intelligence SG).
+Folders:
+- knowledge/: Core SG standards (18 Pilar, ProDem, Master, Zodiak, Quotes)
+- system/: Blueprint and configuration for AISG architecture
+- app/: Application structure (backend/frontend templates)
+- docs/: Additional playbooks, test cases, and version logs
+
+Usage:
+1. Upload /knowledge files to GPT Builder or AISG Engine Server.
+2. Upload /system configs to initialize system architecture.
+3. Use /app structure to deploy backend & frontend in Replit.

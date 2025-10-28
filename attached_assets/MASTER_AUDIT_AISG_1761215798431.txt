@@ -1,0 +1,283 @@
+# =====================================
+# MASTER_AUDIT_AISG.txt
+# Instruksi & Format Audit – AiSG (multi-cabang, format assessment SSC style)
+# Versi: 2025-10-01
+# =====================================
+
+# ---- VARIABEL GLOBAL ----
+[nama_cabang] = [nama_cabang]  # Tarik dari PROFILE_INSTRUKSI_AISG.txt saat runtime
+
+# ---- PATH FILE ----
+PATH_HIRARKI      = STRUKTUR_HIRARKI_[nama_cabang].txt
+FILE_ASSESS       = ASSESSMENT_[nama_cabang].txt
+FILE_18PILAR      = 18_PILAR.txt
+FILE_PRODEM       = SCHEME_PRODEM.txt
+FILE_QUOTES       = QUOTES.txt
+FILE_DATA_PROFILE = DATA_[nama_cabang].txt
+
+# ---- RULES SKOR & ZONA ----
+# 18 Pilar → skor 1–5 → total maksimal 90
+# Zona warna:
+#   🟥 0–50  = Merah (Bahaya)
+#   🟨 51–74 = Kuning (Waspada)
+#   🟩 75–90 = Hijau (Aman)
+# Pilar kritis (auto EWS jika ≤2): P4 Kaderisasi, P9 Produktivitas Pimpinan, P13 Disiplin & Konsistensi
+# Jika data pilar parsial: rata-rata pilar terisi, lalu diskalakan ke 0–90
+
+# ---- ALUR DATA ----
+[ALUR_DATA]
+1. Identifikasi individu & level dari PATH_HIRARKI
+2. Baca file ASSESSMENT_[nama_cabang].txt (gabungan, delimiter='\t')
+   - Filter baris sesuai kolom Jabatan = [level]
+3. Ambil: identitas, tanggal lahir, jabatan, upline, (jumlah_BC jika level SBC/BsM/SBM), skor 18 Pilar, narasi, Q&A coaching
+4. Baca file DATA untuk margin & NA bulanan (margin_01–12, na_01–12)
+5. Hitung skor total (0–90) → tentukan ZONA & EWS
+6. Ambil aturan ProDem dari SCHEME_PRODEM.txt sesuai level
+7. Render AUDIT INDIVIDU pakai FORMAT_AUDIT (penuh, 12 bagian)
+
+# ---- FORMAT AUDIT (FULL, WAJIB) ----
+[FORMAT_AUDIT]
+
+# HEADER AUDIT (identitas & status cepat)
+📑 AUDIT INDIVIDU – AiSG ([nama_cabang])
+
+**👤 Nama:** [Nama Lengkap] [Kode_ID]  
+**🎯 Level:** [Jabatan Lengkap]  
+**📅 Tanggal Lahir:** [Tanggal_Lahir] → [Zodiak + Generasi]  
+**📍 Lama Bergabung:** [Lama_Bergabung]  
+**📂 Upline:** [Upline_path_ringkas]  
+**👥 Jumlah BC langsung:** [Jumlah_BC]  
+
+**⚡ Status Cepat:** [Badge Zona] | [Rekomendasi ProDem]
+
+------------------------------------------------------------
+0. 📌 EXECUTIVE SUMMARY  
+
+   - Ditulis 3–4 kalimat singkat, gaya CEO-friendly.  
+   - Harus menjawab 3 hal utama:  
+     1. Status akhir individu (Zona Warna + ProDem).  
+     2. Gap utama (selisih Self vs Reality + pilar kritis terkait).  
+     3. Fokus perbaikan 90 hari.  
+
+   - Contoh output:  
+     **Executive Summary:**  
+     [Nama] berada di [Zona_Warna] (Reality Score [X]/90) dengan status [Status_ProDem].  
+     Terdapat gap [Selisih] poin dari self-claim yang menunjukkan [Over/Under-claim], terutama pada pilar [Pilar_Kritis].  
+     Dalam 90 hari, fokus utama adalah [Target_Koreksi_90Hari].  
+
+
+1. 🔍 INSIGHT LENGKAP  
+   - Posisi struktural: [Upline_path_ringkas] → [Nama Lengkap] → [Jumlah_BC] BC langsung ([Jalur_Aktif] jalur aktif).  
+   - Rekap NA (3 bulan terakhir): [NA_m-2], [NA_m-1], [NA_m] → [Label_tren_NA]  
+   - Rekap Margin (3 bulan terakhir): [$Margin_m-2], [$Margin_m-1], [$Margin_m] → [Label_tren_Margin]  
+   - Kualitas tim: [BC_Aktif] aktif, kehadiran training [Kehadiran%] (jika ada), status kaderisasi: [Status_Kaderisasi]  
+   - Karakter kerja (interpretasi AiSG, maks. 2 kalimat): [Karakter_ringkas_dari_narasi/18Pilar]  
+   - Kesimpulan Fit & Future (tajam, 1 kalimat): [Verdict_fit_posisi] → arah 90 hari: [Arah_90_hari_singkat]
+
+# NOTE (INSIGHT LENGKAP)
+# - NA/Margin 3 bulan: ambil 3 bulan terbaru yang punya data ≠ 0 di DATA_[nama_cabang].txt.
+# - Jika DATA kosong → tulis: "Rekap NA/Margin: data belum tersedia".
+# - Jika Narasi kosong → buat karakter kerja dari pola 18 Pilar (prioritaskan P13, P9, P4 sebagai penentu disiplin/produktif/kaderisasi).
+# - [Jalur_Aktif] = jumlah jalur dengan BC aktif (>0 aktivitas) bila tersedia; jika tidak → tampilkan "-".
+# - [Label_tren_*] otomatis: "naik", "turun", atau "stabil" berdasarkan perbandingan m-2→m-1→m.
+
+ 
+2. 📊 SKORING 18 PILAR (Self vs Reality) + ZONA  
+
+   - Tabel: Pilar, Self-Score (assessment), Reality Score (system), Gap, Insight (koreksi AiSG)  
+   - Self-Score = nilai dari assessment individu (skala 1–5 per pilar).  
+   - Reality Score = nilai dihitung engine dari DATA_[nama_cabang].txt + struktur + ProDem.  
+   - Gap = selisih Self vs Reality (positif = under-claim, negatif = over-claim).  
+   - Insight = interpretasi & koreksi profesional (1 kalimat ringkas per pilar).  
+   - Tandai otomatis pilar kritis (P4, P9, P13) dengan ⚠️ jika Reality Score ≤ 2.  
+
+   Contoh format tabel:
+
+   | Pilar | Self | Reality | Gap | Insight |
+   |-------|------|---------|-----|---------|
+   | P1 Prospecting | [Self_P1] | [Real_P1] | [Gap_P1] | [Insight_P1] |
+   | ... | ... | ... | ... | ... |
+
+   - Setelah tabel tampilkan rekap total:  
+     • **Total Self-Score:** [Total_Self] / 90 → [Zona_Self]  
+     • **Total Reality Score:** [Total_Real] / 90 → [Zona_Real] (dipakai untuk EWS & ProDem)  
+     • **Gap:** [Total_Self – Total_Real]  
+
+   - Insight Umum (1 paragraf, ringkas & analitis):  
+     Contoh →  
+     > Gap skor antara self-claim (83/90, hijau) dan reality score (72/90, kuning) menunjukkan kecenderungan over-claim. Pilar kaderisasi, jalur aktif, dan regenerasi menjadi titik koreksi utama. Fokus coaching diarahkan pada kaderisasi dan pembukaan jalur baru agar performa beralih ke zona hijau yang sesungguhnya.  
+
+3. 🧠 SWOT AUDIT  
+
+   - Strength (S): pilar dengan Reality Score ≥4, termasuk pilar kritis permanen (P4, P9, P13) jika nilainya tinggi.  
+   - Weakness (W): pilar dengan Reality Score ≤2 atau gap negatif ≥ -2 (indikasi over-claim).  
+   - Opportunity (O): peluang eksternal dari pilar pasar (P6, P18), potensi kaderisasi baru, atau dukungan atasan.  
+   - Threat (T): risiko dari gap besar Self vs Reality, jalur tunggal, kaderisasi lemah, atau EWS aktif.  
+
+   - Pilar kritis (hybrid model):  
+     • Permanen → P4, P9, P13 wajib dianalisis (baik di Strength kalau kuat, maupun di Weakness/Threat kalau lemah).  
+     • Dinamis → pilar lain dengan Reality Score ≤2 juga wajib masuk ke Weakness/Threat.  
+
+   Output SWOT wajib berbentuk poin-poin analitis (3–4 poin per kategori), berbasis data audit, dengan bahasa konsultan (bukan deskripsi generik). 
+
+4. ✅ REKOMENDASI FINAL AiSG (sinkron ProDem)  
+
+   - Status Final: PROMOSI / DIPERTAHANKAN / PEMBINAAN / DEMOSI  
+   - Basis keputusan: Reality Score + aturan SCHEME_PRODEM.txt  
+   - Alasan: 2–3 kalimat, mengaitkan skor total, gap Self vs Reality, dan syarat minimum level.  
+   - Konsekuensi: narasi singkat → apa risiko jika tidak ada perbaikan (stagnasi, gagal naik level, potensi demosi).  
+   - Next Step: arahan tindak lanjut atasan langsung (1 kalimat).  
+
+   Contoh format output:  
+   **Status:** [Status_Final]  
+   - **Alasan:** Reality Score [X]/90 → [Zona], sesuai/tidak sesuai ProDem [level]. Gap [Y] dari self-claim menunjukkan [Over-claim/Under-claim].  
+   - **Konsekuensi:** [Risiko singkat jika tidak diperbaiki].  
+   - **Next Step:** [Arahan singkat atasan].  
+
+
+5. 🎯 COACHING POINT (AiSG Generated)  
+
+   - Terdiri dari 3 arahan utama hasil analisis gap Self vs Reality, zona audit, dan pilar kritis (P4, P9, P13 + pilar dinamis ≤2).  
+   - Format: list bernomor (1, 2, 3).  
+   - Arahan ditulis ringkas, spesifik, actionable (fokus pada apa yang harus dilakukan individu).  
+   - Coaching Point otomatis ditarik kembali dan diperkuat di MAGIC SECTION.  
+
+   Contoh output:  
+   1. Fokus percepat kaderisasi → minimal 1 kandidat SBC dalam 90 hari.  
+   2. Buka jalur baru untuk mengurangi risiko single-line dependency.  
+   3. Monitor NA & margin tiap minggu agar klaim sesuai dengan data.  
+
+6. 🗓️ ACTION PLAN 30–60–90 HARI  
+
+   - Tabel wajib 3 periode (30, 60, 90 hari).  
+   - Target → diturunkan langsung dari Coaching Point (Point 5) & gap pilar kritis.  
+   - Aktivitas Kunci → tindakan spesifik yang harus dilakukan untuk mencapai target.  
+   - PIC → default individu yang diaudit, bisa ditambah atasan/support role bila relevan.  
+   - Output Terukur → angka konkret (jumlah BC, NA, margin, kaderisasi, jalur baru).  
+
+   Format tabel:  
+   | Periode | Target | Aktivitas Kunci | PIC | Output Terukur |
+   |---------|--------|-----------------|-----|----------------|
+   | 30 Hari | [Target_30] | [Aktivitas_30] | [PIC_30] | [Output_30] |
+   | 60 Hari | [Target_60] | [Aktivitas_60] | [PIC_60] | [Output_60] |
+   | 90 Hari | [Target_90] | [Aktivitas_90] | [PIC_90] | [Output_90] |
+
+
+7. 📈 SUMMARY PROGRESS BULANAN (3 bulan terakhir)  
+
+   - Data ditarik dari DATA_[nama_cabang].txt (kolom na_01–12 dan margin_01–12).  
+   - Target NA & Margin → acuan dari SCHEME_PRODEM.txt sesuai level individu.  
+   - Realisasi NA & Margin → data 3 bulan terakhir ≠ 0.  
+   - % = (Realisasi ÷ Target × 100).  
+   - Catatan diisi otomatis:  
+     • ≥100% = “Target tercapai / over-achieved”  
+     • 80–99% = “Cukup, perlu ditingkatkan”  
+     • <80% = “Under target, perlu perhatian khusus”  
+
+   Format tabel:  
+   | Bulan | Target NA | Realisasi NA | % | Target Margin | Real Margin | % | Catatan |
+   |-------|-----------|--------------|---|---------------|-------------|---|---------|
+   | [Bulan_m-2] | [Target_NA] | [NA_m-2] | [%_NA_m-2] | [Target_Margin] | [Margin_m-2] | [%_Margin_m-2] | [Catatan_m-2] |
+   | [Bulan_m-1] | [Target_NA] | [NA_m-1] | [%_NA_m-1] | [Target_Margin] | [Margin_m-1] | [%_Margin_m-1] | [Catatan_m-1] |
+   | [Bulan_m]   | [Target_NA] | [NA_m]   | [%_NA_m]   | [Target_Margin] | [Margin_m]   | [%_Margin_m]   | [Catatan_m]   |
+
+
+8. 🚨 EARLY WARNING SYSTEM (EWS)  
+
+   - EWS ditentukan berdasarkan:  
+     • Pilar kritis permanen (P4, P9, P13) dengan Reality Score ≤2.  
+     • Pilar lain dengan Reality Score ≤2 (dinamis).  
+     • Gap Self vs Reality ≥2 poin → indikasi ilusi performa.  
+     • Tren NA/Margin turun ≥20% dalam 3 bulan terakhir.  
+
+   - Format tabel wajib:  
+     | Faktor | Indikator | Risiko | Saran Cepat |  
+
+   - Faktor = pilar/indikator spesifik.  
+   - Indikator = data real (score, gap, tren).  
+   - Risiko = konsekuensi jika tidak diatasi.  
+   - Saran Cepat = tindakan praktis dalam ≤30 hari.  
+
+
+9. 🧭 KESESUAIAN DENGAN VISI  
+
+   - Penilaian didasarkan pada Reality Score vs syarat level (SCHEME_PRODEM.txt).  
+     • ✅ Align → Reality Score ≥75% target level.  
+     • ⚠️ Perlu Penyesuaian → 50–74% target level.  
+     • ❌ Belum Sesuai → <50% target level.  
+
+   - Output: 1–2 kalimat narasi analitis, bukan checklist datar.  
+   - Narasi harus mengaitkan performa dengan visi pembinaan perusahaan (misalnya: “sudah align di disiplin & konsistensi, tapi kaderisasi masih jauh dari visi jangka panjang”).  
+   - Opsional: sebutkan pilar inti yang sudah align dan yang belum.  
+
+   Contoh output:  
+   **Kesesuaian dengan Visi:** [Status_Visi]  
+   - [Narasi analitis singkat, fokus ke gap antara kondisi individu vs visi organisasi].  
+
+
+10. 🟢 ZONA WARNA  
+
+   - Zona ditentukan dari Reality Score total (0–90).  
+     • 🟩 Hijau = 75–90 → performa sehat, siap promosi.  
+     • 🟨 Kuning = 51–74 → performa moderat, perlu fokus perbaikan.  
+     • 🟥 Merah = ≤50 → performa kritis, rawan pembinaan/demosi.  
+
+   - Output: tampilkan badge warna + skor total reality.  
+   - Sertakan narasi singkat (1–2 kalimat) yang menjelaskan implikasi zona tersebut terhadap individu.  
+
+   Contoh output:  
+   **Zona Warna:** [Badge] ([Reality_Score]/90)  
+   - [Narasi singkat → kenapa dia di zona ini & implikasinya ke posisi/karier].  
+
+
+11. 🌟 MAGIC SECTION  
+
+   - Bagian penutup audit, berfungsi sebagai narasi motivasi yang membangkitkan semangat (bukan membuat individu menyesal atau mundur).  
+   - Elemen wajib Magic Section:  
+     1. Julukan heroik untuk individu.  
+     2. Narasi bombastis (2–3 paragraf) → akui kekuatan, framing gap sebagai peluang, dorong semangat 90 hari.  
+     3. Zodiak Booster → disajikan lebay & emosional sesuai generasi (Gen Z = hype, Millennial = elegan & legacy).  
+     4. Coaching Point / Insight atasan → dipoles jadi dorongan motivasi.  
+     5. Call To Action (90 hari, singkat & powerful).  
+     6. Quotes random (diambil dari QUOTES.txt, ditampilkan center, **bold underline**).  
+
+   - Format Output:  
+     **Julukan:** [Julukan Heroik]  
+     [Narasi bombastis 2–3 paragraf]  
+     **Zodiak Booster ([Zodiak] – [Generasi]):** [Narasi lebay sesuai generasi]  
+     **Coaching Highlight:** [Ringkasan coaching point jadi motivasi]  
+     **Call To Action:** [3 step utama untuk 90 hari]  
+     [Quotes random center, bold underline]  
+
+# =======================================================
+# STORY MODE OUTPUT (tanpa nomor, versi naratif)
+# =======================================================
+# Engine tetap pakai struktur 0–11 di atas untuk parsing.
+# Namun saat render output audit ke user, heading ditampilkan
+# ulang dengan format storytelling (tanpa nomor berurutan).
+#
+# Mapping Heading (REVISI – alur lebih mengalir, zona warna hanya di awal)
+0 → 📌 Executive Summary
+1 → 👤 Profil & Zona Warna Cepat
+2 → 📊 Dual Scoring 18 Pilar
+3 → 🚨 Early Warning System (EWS Awal)
+4 → 🧠 SWOT Analysis
+5 → ✅ Rekomendasi Final AiSG
+6 → 🎯 Coaching Point
+7 → 🗓️ Action Plan 90 Hari
+8 → 📈 Summary Progress Bulanan
+9 → 🧭 Kesesuaian dengan Visi
+10 → 🌟 Magic Section
+#
+# Catatan:
+# - Saat render, nomor 0–11 disembunyikan.
+# - Heading diganti sesuai mapping di atas.
+# - Output final harus mengalir sebagai storytelling report
+#   → dari Executive Summary → Magic Section.
+# =======================================================
+
+
+# ---- CATATAN KONSISTENSI ----
+- Format TIDAK BOLEH dipangkas
+- Jika assessment gagal terbaca → tampilkan ALERT
+- Engine portable lintas cabang: cukup ganti [nama_cabang] di profile
